@@ -1,0 +1,119 @@
+"""Leakage-resistant train/validation/test splitting."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Iterable
+
+import pandas as pd
+
+
+@dataclass(frozen=True)
+class SplitResult:
+    train: pd.DataFrame
+    validation: pd.DataFrame
+    test: pd.DataFrame
+    manifest: dict
+
+
+def _stratified_indices(labels: pd.Series, train_fraction: float, validation_fraction: float, seed: int) -> tuple[list[int], list[int], list[int]]:
+    import numpy as np
+
+    rng = np.random.default_rng(seed)
+    train: list[int] = []
+    validation: list[int] = []
+    test: list[int] = []
+    for _, group in labels.groupby(labels, dropna=False):
+        indices = group.index.to_numpy(copy=True)
+        rng.shuffle(indices)
+        n_train = max(1, int(len(indices) * train_fraction)) if len(indices) >= 3 else int(len(indices) * train_fraction)
+        n_validation = int(len(indices) * validation_fraction)
+        train.extend(indices[:n_train].tolist())
+        validation.extend(indices[n_train:n_train + n_validation].tolist())
+        test.extend(indices[n_train + n_validation:].tolist())
+    return train, validation, test
+
+
+def _group_counts(group_count: int, train_fraction: float, validation_fraction: float) -> tuple[int, int, int]:
+    """Allocate at least one group to validation and test when possible."""
+    if group_count < 3:
+        return 0, 0, 0
+    test_fraction = 1.0 - train_fraction - validation_fraction
+    validation_count = max(1, int(round(group_count * validation_fraction)))
+    test_count = max(1, int(round(group_count * test_fraction)))
+    train_count = group_count - validation_count - test_count
+    if train_count < 1:
+        train_count = 1
+        largest = "validation" if validation_count >= test_count else "test"
+        if largest == "validation":
+            validation_count = max(1, group_count - train_count - test_count)
+        else:
+            test_count = max(1, group_count - train_count - validation_count)
+    return train_count, validation_count, test_count
+
+
+def split_frame(
+    frame: pd.DataFrame,
+    *,
+    label_column: str = "binary_label",
+    group_columns: Iterable[str] = (),
+    train_fraction: float = 0.70,
+    validation_fraction: float = 0.15,
+    seed: int = 42,
+) -> SplitResult:
+    if abs(train_fraction + validation_fraction - 0.85) > 1e-9:
+        raise ValueError("This splitter expects train + validation = 0.85, leaving 0.15 for test")
+    if label_column not in frame:
+        raise ValueError(f"Missing split label {label_column!r}")
+    group_columns = [column for column in group_columns if column in frame.columns]
+    groups = pd.Series("<row>", index=frame.index, dtype="string")
+    train_mask = pd.Series(False, index=frame.index)
+    validation_mask = pd.Series(False, index=frame.index)
+    test_mask = pd.Series(False, index=frame.index)
+    used_group_split = bool(group_columns and frame[group_columns].notna().any(axis=None))
+    if used_group_split:
+        groups = frame[group_columns].astype("string").fillna("<missing>").agg("|".join, axis=1)
+        unique_groups = groups.drop_duplicates().tolist()
+        import numpy as np
+
+        rng = np.random.default_rng(seed)
+        rng.shuffle(unique_groups)
+        n_train, n_validation, _ = _group_counts(len(unique_groups), train_fraction, validation_fraction)
+        if n_train == 0:
+            used_group_split = False
+        else:
+            train_groups = set(unique_groups[:n_train])
+            validation_groups = set(unique_groups[n_train:n_train + n_validation])
+            test_groups = set(unique_groups[n_train + n_validation:])
+            train_mask = groups.isin(train_groups)
+            validation_mask = groups.isin(validation_groups)
+            test_mask = groups.isin(test_groups)
+        if validation_mask.sum() == 0 or test_mask.sum() == 0:
+            used_group_split = False
+    if not used_group_split:
+        train_indices, validation_indices, test_indices = _stratified_indices(frame[label_column], train_fraction, validation_fraction, seed)
+        train_mask = frame.index.isin(train_indices)
+        validation_mask = frame.index.isin(validation_indices)
+        test_mask = frame.index.isin(test_indices)
+
+    result = SplitResult(
+        train=frame.loc[train_mask].reset_index(drop=True),
+        validation=frame.loc[validation_mask].reset_index(drop=True),
+        test=frame.loc[test_mask].reset_index(drop=True),
+        manifest={
+            "strategy": "group" if used_group_split else "row_stratified",
+            "group_columns": group_columns,
+            "seed": seed,
+            "rows": {
+                "train": int(train_mask.sum()),
+                "validation": int(validation_mask.sum()),
+                "test": int(test_mask.sum()),
+            },
+            "groups": {
+                "train": sorted(set(groups[train_mask])) if used_group_split else [],
+                "validation": sorted(set(groups[validation_mask])) if used_group_split else [],
+                "test": sorted(set(groups[test_mask])) if used_group_split else [],
+            },
+        },
+    )
+    return result

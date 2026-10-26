@@ -1,0 +1,32 @@
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.env
+# Data and generated artifacts
+data/raw/*
+data/interim/*
+data/processed/*
+data/manifests/*
+artifacts/*
+reports/experiments/*
+reports/figures/*
+reports/tables/*
+!data/raw/.gitkeep
+!data/interim/.gitkeep
+!data/processed/.gitkeep
+!data/manifests/.gitkeep
+!artifacts/preprocess/.gitkeep
+!artifacts/models/.gitkeep
+!artifacts/thresholds/.gitkeep
+!artifacts/metadata/.gitkeep
+!reports/figures/.gitkeep
+!reports/tables/.gitkeep
+!reports/experiments/.gitkeep
+
+# Local uploads/results
+uploads/
+predictions/

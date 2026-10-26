@@ -1,0 +1,9 @@
+seed: 42
+n_splits: 5
+known_attack_only: true
+confidence_threshold: 0.60
+random_forest_estimators: 200
+xgboost_estimators: 200
+# Bound the OOF workload so this stage remains runnable on a typical laptop.
+# Every attack family is retained by the stratified sampler.
+max_rows: 100000

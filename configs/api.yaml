@@ -1,0 +1,4 @@
+max_batch_rows: 10000
+max_upload_bytes: 10485760
+request_timeout_seconds: 30
+model_version: "untrained-development"

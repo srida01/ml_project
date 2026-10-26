@@ -1,0 +1,7 @@
+raw_dir: data/raw
+interim_dir: data/interim
+manifest_dir: data/manifests
+label_column: Label
+encoding: utf-8
+csv_glob: "*.csv"
+duplicate_policy: preserve_and_flag

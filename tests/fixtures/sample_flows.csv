@@ -1,0 +1,21 @@
+Destination Port,Flow Duration,Total Fwd Packets,Label,source_file,capture_day
+80,100,2,BENIGN,day1.csv,day1
+443,200,3,BENIGN,day1.csv,day1
+22,500,10,SSH-Patator,day2.csv,day2
+80,700,20,DoS Hulk,day2.csv,day2
+53,150,2,BENIGN,day3.csv,day3
+8080,900,40,PortScan,day3.csv,day3
+443,180,2,BENIGN,day4.csv,day4
+22,650,30,FTP-Patator,day4.csv,day4
+80,220,3,BENIGN,day5.csv,day5
+53,110,2,Bot,day5.csv,day5
+443,190,3,BENIGN,day6.csv,day6
+8080,850,25,DDoS,day6.csv,day6
+80,130,2,BENIGN,day7.csv,day7
+22,620,32,SSH-Patator,day7.csv,day7
+443,210,3,BENIGN,day8.csv,day8
+80,720,22,DoS GoldenEye,day8.csv,day8
+53,140,2,BENIGN,day9.csv,day9
+8080,870,26,PortScan,day9.csv,day9
+443,230,3,BENIGN,day10.csv,day10
+80,740,24,DoS slowloris,day10.csv,day10

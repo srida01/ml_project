@@ -1,0 +1,3 @@
+version: "1.0"
+known_confidence_threshold: 0.60
+anomaly_threshold: null

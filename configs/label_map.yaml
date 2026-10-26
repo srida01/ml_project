@@ -1,0 +1,32 @@
+version: "1.0"
+benign_label: BENIGN
+family_map:
+  BENIGN: BENIGN
+  Bot: Bot
+  "Bot - Attempted": Bot
+  DDoS: DDoS
+  "DoS GoldenEye": DoS
+  "DoS GoldenEye - Attempted": DoS
+  "DoS Hulk": DoS
+  "DoS Hulk - Attempted": DoS
+  "DoS Slowhttptest": DoS
+  "DoS Slowhttptest - Attempted": DoS
+  "DoS slowloris": DoS
+  "DoS slowloris - Attempted": DoS
+  Heartbleed: Heartbleed
+  "FTP-Patator": Patator
+  "FTP-Patator - Attempted": Patator
+  "SSH-Patator": Patator
+  "SSH-Patator - Attempted": Patator
+  PortScan: PortScan
+  "Web Attack - Brute Force": WebAttack
+  "Web Attack - Brute Force - Attempted": WebAttack
+  "Web Attack – Brute Force": WebAttack
+  "Web Attack - XSS": WebAttack
+  "Web Attack - XSS - Attempted": WebAttack
+  "Web Attack – XSS": WebAttack
+  "Web Attack - Sql Injection": WebAttack
+  "Web Attack – Sql Injection": WebAttack
+  Infiltration: Infiltration
+  "Infiltration - Attempted": Infiltration
+unknown_policy: error

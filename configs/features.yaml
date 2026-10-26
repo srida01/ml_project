@@ -1,0 +1,5 @@
+label_columns: [Label, raw_label, binary_label, multiclass_label]
+metadata_columns: [source_file, source_row, flow_id, "Flow ID", "Src IP", "Dst IP", "Src Port", "Dst Port", Protocol, Timestamp, timestamp, sequence_id, split]
+drop_columns: []
+numeric_coerce_errors: coerce
+finite_policy: replace_with_nan

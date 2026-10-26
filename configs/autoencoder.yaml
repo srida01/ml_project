@@ -1,0 +1,10 @@
+seed: 42
+hidden_dims: [128, 64, 16]
+epochs: 100
+patience: 10
+benign_validation_fpr: 0.01
+learning_rate: 0.001
+batch_size: 256
+# Keep CPU training and validation bounded on local development machines.
+max_train_rows: 100000
+max_validation_rows: 50000

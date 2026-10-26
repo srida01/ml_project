@@ -1,0 +1,8 @@
+seed: 42
+strategy: group_then_stratified
+train_fraction: 0.70
+validation_fraction: 0.15
+test_fraction: 0.15
+group_columns: [source_file, capture_day]
+fallback_to_row_stratified: true
+open_set_withheld_families: []

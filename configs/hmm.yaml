@@ -1,0 +1,4 @@
+seed: 42
+states: [2, 3, 4, 5]
+min_sequence_length: 2
+emission_columns: [svm_score, known_attack_confidence, anomaly_score]

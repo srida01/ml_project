@@ -1,0 +1,34 @@
+"""Inference service used by all HTTP routes."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+import pandas as pd
+
+from ids.pipeline.predict import InferenceEngine
+
+
+@dataclass
+class InferenceService:
+    engine: InferenceEngine
+    max_batch_rows: int = 10000
+
+    @property
+    def model_info(self) -> dict[str, Any]:
+        return {
+            "model_version": self.engine.model_version,
+            "required_features": self.engine.required_features,
+            "prediction_fields": list(self.engine.predict_frame(pd.DataFrame()).columns),
+        }
+
+    def predict_flow(self, flow: dict[str, Any]) -> dict[str, Any]:
+        return self.predict_flows([flow])[0]
+
+    def predict_flows(self, flows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+        if len(flows) > self.max_batch_rows:
+            raise ValueError(f"Batch exceeds maximum of {self.max_batch_rows} rows")
+        frame = pd.DataFrame(flows)
+        predictions = self.engine.predict_frame(frame)
+        return predictions.where(pd.notna(predictions), None).to_dict(orient="records")
