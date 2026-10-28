@@ -8,6 +8,7 @@ __pycache__/
 .env
 # Data and generated artifacts
 data/raw/*
+data/download/
 data/interim/*
 data/processed/*
 data/manifests/*

@@ -5,3 +5,5 @@ label_column: Label
 encoding: utf-8
 csv_glob: "*.csv"
 duplicate_policy: preserve_and_flag
+# Store cleaned features as float32 to halve memory on the full dataset.
+numeric_dtype: float32

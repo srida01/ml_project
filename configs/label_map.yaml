@@ -27,6 +27,11 @@ family_map:
   "Web Attack – XSS": WebAttack
   "Web Attack - Sql Injection": WebAttack
   "Web Attack – Sql Injection": WebAttack
+  # The official MachineLearningCVE archive ships these with the dash already
+  # corrupted to U+FFFD (the Unicode replacement character).
+  "Web Attack \uFFFD Brute Force": WebAttack
+  "Web Attack \uFFFD XSS": WebAttack
+  "Web Attack \uFFFD Sql Injection": WebAttack
   Infiltration: Infiltration
   "Infiltration - Attempted": Infiltration
 unknown_policy: error

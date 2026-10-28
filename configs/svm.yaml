@@ -3,6 +3,12 @@ kernel: rbf
 C: 2.0
 class_weight: balanced
 validation_recall_target: 0.98
-max_exact_rows: 100000
-approx_components: 512
+# Approximate RBF SVM settings selected on the validation split only
+# (scripts/13_tune_svm.py; results in reports/tables/svm_tuning_round*.json).
+# Lowest validation FPR at 98% recall: 10.8% before tuning -> 3.3% after.
+gamma: 0.2
+alpha: 0.000001
+epochs: 5
+max_exact_rows: 500000
+approx_components: 2048
 transform_batch_size: 4096

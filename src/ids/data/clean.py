@@ -56,6 +56,7 @@ def clean_frame(
     mapping: LabelMapping | None = None,
     label_column: str = "Label",
     duplicate_policy: str = "preserve_and_flag",
+    numeric_dtype: str | None = None,
 ) -> tuple[pd.DataFrame, dict]:
     original_rows = len(frame)
     result = frame.copy()
@@ -74,6 +75,9 @@ def clean_frame(
         inf_mask = converted.isin([float("inf"), float("-inf")])
         inf_counts[column] = int(inf_mask.sum())
         result[column] = converted.mask(inf_mask)
+        if numeric_dtype is not None:
+            # float32 halves memory for the ~2.8M-row CICIDS2017 table.
+            result[column] = result[column].astype(numeric_dtype)
         coerced[column] = before_non_numeric
 
     duplicate_mask = result.duplicated(keep=False)
@@ -126,6 +130,7 @@ def clean_directory(
     report_path: str | Path | None = None,
     duplicate_policy: str = "preserve_and_flag",
     encoding: str = "utf-8",
+    numeric_dtype: str | None = None,
 ) -> dict:
     input_dir = Path(input_dir)
     files = sorted(input_dir.glob("*.csv"))
@@ -141,6 +146,7 @@ def clean_directory(
             mapping=mapping,
             label_column=label_column,
             duplicate_policy=duplicate_policy,
+            numeric_dtype=numeric_dtype,
         )
         report["sha256"] = sha256_file(path)
         frames.append(cleaned)

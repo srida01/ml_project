@@ -27,6 +27,8 @@ class SVMFilter:
         max_exact_rows: int = 100000,
         approx_components: int = 512,
         transform_batch_size: int = 4096,
+        alpha: float = 1e-4,
+        epochs: int = 1,
         seed: int = 42,
     ) -> "SVMFilter":
         from sklearn.svm import SVC
@@ -52,7 +54,7 @@ class SVMFilter:
                 gamma_value = gamma
             sampler = RBFSampler(
                 gamma=gamma_value,
-                n_components=min(approx_components, max(64, X_fit.shape[1] * 8)),
+                n_components=approx_components,
                 random_state=seed,
             )
             # Do not call ``fit_transform`` here.  RBFSampler materializes the
@@ -69,17 +71,21 @@ class SVMFilter:
                 from sklearn.utils.class_weight import compute_sample_weight
 
                 sample_weights = compute_sample_weight(class_weight, y_fit)
-            model = SGDClassifier(loss="hinge", class_weight=None, random_state=seed)
+            model = SGDClassifier(loss="hinge", alpha=alpha, class_weight=None, random_state=seed)
             classes = np.unique(y_fit)
-            for start in range(0, len(X_fit), transform_batch_size):
-                stop = start + transform_batch_size
-                transformed = np.asarray(sampler.transform(X_fit[start:stop]), dtype=np.float32)
-                model.partial_fit(
-                    transformed,
-                    y_fit[start:stop],
-                    classes=classes,
-                    sample_weight=None if sample_weights is None else sample_weights[start:stop],
-                )
+            rng = np.random.default_rng(seed)
+            # Each epoch is one pass of mini-batch SGD; later epochs reshuffle.
+            for epoch in range(epochs):
+                order = np.arange(len(X_fit)) if epoch == 0 else rng.permutation(len(X_fit))
+                for start in range(0, len(X_fit), transform_batch_size):
+                    batch = order[start:start + transform_batch_size]
+                    transformed = np.asarray(sampler.transform(X_fit[batch]), dtype=np.float32)
+                    model.partial_fit(
+                        transformed,
+                        y_fit[batch],
+                        classes=classes,
+                        sample_weight=None if sample_weights is None else sample_weights[batch],
+                    )
             return cls(_ApproximateModel(sampler, model, transform_batch_size), threshold=0.0, model_name="rbf_sampler_linear_svm")
         model = SVC(kernel=kernel, C=C, gamma=gamma, class_weight=class_weight, probability=True, random_state=seed)
         model.fit(X_array, y_array)

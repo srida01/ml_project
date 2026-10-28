@@ -29,6 +29,7 @@ def main() -> None:
         report_path=args.report,
         duplicate_policy=str(data_config.get("duplicate_policy", "preserve_and_flag")),
         encoding=str(data_config.get("encoding", "utf-8")),
+        numeric_dtype=data_config.get("numeric_dtype"),
     )
     print(f"Cleaned {summary['total_input_rows']} rows from {len(summary['files'])} file(s); wrote {args.output}")
 

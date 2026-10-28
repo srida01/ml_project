@@ -36,6 +36,8 @@ def main() -> None:
         max_exact_rows=int(config.get("max_exact_rows", 100000)),
         approx_components=int(config.get("approx_components", 512)),
         transform_batch_size=int(config.get("transform_batch_size", 4096)),
+        alpha=float(config.get("alpha", 1e-4)),
+        epochs=int(config.get("epochs", 1)),
         seed=int(config.get("seed", 42)),
     )
     model.select_high_recall_threshold(

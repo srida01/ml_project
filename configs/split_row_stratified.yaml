@@ -1,0 +1,14 @@
+# Closed-set experiment: label-stratified row split with no grouping, so every
+# attack family appears in train, validation and test. Near-duplicate flows
+# from one capture can fall on both sides, so report this alongside the
+# capture-file split in configs/split.yaml.
+seed: 42
+strategy: row_stratified
+train_fraction: 0.70
+validation_fraction: 0.15
+test_fraction: 0.15
+group_columns: []
+# Stratify on the attack family so rare families (Heartbleed, Infiltration)
+# appear in every partition.
+stratify_column: multiclass_label
+open_set_withheld_families: []

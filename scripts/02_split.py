@@ -26,7 +26,7 @@ def main() -> None:
     # context so IDs reused on different days remain distinct.
     if "sequence_id" in frame.columns and "sequence_id" not in group_columns:
         group_columns.append("sequence_id")
-    result = split_frame(frame, label_column="binary_label", group_columns=group_columns, train_fraction=float(config.get("train_fraction", 0.70)), validation_fraction=float(config.get("validation_fraction", 0.15)), seed=int(config.get("seed", 42)), withheld_label_values=config.get("open_set_withheld_families", []))
+    result = split_frame(frame, label_column=str(config.get("stratify_column", "binary_label")), group_columns=group_columns, train_fraction=float(config.get("train_fraction", 0.70)), validation_fraction=float(config.get("validation_fraction", 0.15)), seed=int(config.get("seed", 42)), withheld_label_values=config.get("open_set_withheld_families", []))
     output_dir = Path(args.output_dir)
     write_table(result.train, output_dir / "train.parquet")
     write_table(result.validation, output_dir / "validation.parquet")

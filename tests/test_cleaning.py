@@ -27,3 +27,14 @@ def test_cleaning_flags_duplicates_and_preserves_group_metadata():
     assert report["duplicate_flagged_rows"] == 2
     assert cleaned["duplicate_row"].tolist() == [1, 1]
     assert cleaned["capture_day"].tolist() == ["day1", "day1"]
+
+
+def test_cleaning_can_downcast_features_and_maps_corrupted_web_attack_labels():
+    from ids.data.labels import mapping_from_config
+    from ids.utils.io import read_yaml
+
+    mapping = mapping_from_config(read_yaml("configs/label_map.yaml"))
+    frame = pd.DataFrame({"Flow Duration": [10, 20], "Label": ["BENIGN", "Web Attack � XSS"]})
+    cleaned, _ = clean_frame(frame, source_file="x.csv", mapping=mapping, numeric_dtype="float32")
+    assert cleaned["Flow Duration"].dtype == np.float32
+    assert cleaned["multiclass_label"].tolist() == ["BENIGN", "WebAttack"]

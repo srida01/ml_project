@@ -137,6 +137,7 @@ def main() -> None:
     parser.add_argument("--skip-baselines", action="store_true", help="Skip the simple logistic/random-forest baselines")
     parser.add_argument("--skip-autoencoder", action="store_true", help="Skip the PyTorch autoencoder")
     parser.add_argument("--skip-hmm", action="store_true", help="Skip exploratory HMM training")
+    parser.add_argument("--split-config", default="configs/split.yaml", help="Split configuration (e.g. configs/split_row_stratified.yaml)")
     args = parser.parse_args()
 
     raw_dir = ROOT / args.raw_dir
@@ -146,7 +147,7 @@ def main() -> None:
 
     run_stage("00_inspect.py", "--input-dir", str(args.raw_dir))
     run_stage("01_clean.py", "--input-dir", str(args.raw_dir))
-    run_stage("02_split.py")
+    run_stage("02_split.py", "--config", args.split_config)
     run_stage("03_fit_preprocessor.py")
 
     if not args.skip_baselines:
