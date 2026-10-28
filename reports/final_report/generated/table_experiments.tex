@@ -1,0 +1,21 @@
+\begin{table}[!htbp]
+\centering
+\caption{Experiment 1 (family-stratified rows) vs.\ Experiment 2 (capture-file split)}
+\label{tab:experiments}
+\small
+\begin{tabular}{@{}p{4.8cm}p{3.6cm}p{3.6cm}@{}}
+\toprule
+\textbf{Metric} & \textbf{Experiment 1} & \textbf{Experiment 2} \\
+\midrule
+Test flows & 424,619 & 225,745 \\
+Attack families in test & Bot, DDoS, DoS, Heartbleed, Infiltration, Patator, PortScan, WebAttack & DDoS \\
+Families unseen in training & none & DDoS \\
+Test flows with exact copy in train & 13.8\% & 3.3\% \\
+SVM gate recall / FPR & 98.03 / 3.29 & 99.94 / 96.98 \\
+Autoencoder attack TPR / benign FPR & 40.46 / 1.13 & 51.32 / 17.06 \\
+Fused recall / FPR & 98.27 / 4.31 & 100.00 / 97.29 \\
+Fused alerts per 1000 benign & 43.1 & 972.9 \\
+Stack accuracy on attack flows & 99.95\% & 0.00\% \\
+\bottomrule
+\end{tabular}
+\end{table}

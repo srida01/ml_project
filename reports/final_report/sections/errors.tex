@@ -1,0 +1,7 @@
+\begin{itemize}
+    \item \textbf{Web attacks are mostly missed.} Only about 10\% of WebAttack test flows pass the SVM gate, and the autoencoder flags few of them, so most are labelled benign (Figure~\ref{fig:detection}). Brute-force and XSS requests are ordinary-looking HTTP flows to port 80 whose statistics overlap heavily with benign web browsing. The family classifier separates them well once they are gated (F1 above 96\%), so the gate is the bottleneck.
+    \item \textbf{Bot traffic is partly missed.} About 59\% of Bot flows are detected; the missed ones are likely low-volume periodic connections whose statistics resemble benign traffic.
+    \item \textbf{Rare families rely on the anomaly stage.} The gate detects only one of three Heartbleed flows and one of six Infiltration flows, but the autoencoder flags most of them. With so few examples, per-family estimates for these classes have very high variance.
+    \item \textbf{False positives.} \EoneFusionAlerts{} of every 1000 benign flows raise an alert. Most come from the gate (\EoneGateAlerts{} per 1000) and the rest from anomaly alerts on unusual but benign flows (the autoencoder's \EoneAeFpr\% design rate).
+    \item \textbf{Cascade metric.} When gate misses are counted as a separate wrong class, the end-to-end family macro-F1 is \EoneCascadeMacroFone. This value is driven mainly by the missed WebAttack, Bot and rare-family flows above, not by attribution errors.
+\end{itemize}

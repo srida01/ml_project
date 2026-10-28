@@ -1,0 +1,17 @@
+\begin{table}[!htbp]
+\centering
+\caption{Attack-family attribution on true attack flows of the Experiment 1 test set}
+\label{tab:multiclass}
+\small
+\resizebox{\linewidth}{!}{\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Accuracy\,\%} & \textbf{Macro-F1} & \textbf{Weighted-F1} & \textbf{Bal.\ acc.\,\%} \\
+\midrule
+Random forest & 99.96 & 0.985 & 1.000 & 97.60 \\
+XGBoost & 99.97 & 0.961 & 1.000 & 93.47 \\
+Logistic regression & 99.57 & 0.869 & 0.996 & 90.52 \\
+Stacked ensemble (OOF meta) & 99.95 & 0.922 & 0.999 & 97.70 \\
+\bottomrule
+\end{tabular}}
+\par\smallskip\parbox{\linewidth}{\footnotesize Base models are the stack's own base learners refitted on its 8-family training sample. The end-to-end cascade (gate misses counted as errors) has macro-F1 0.614.}
+\end{table}

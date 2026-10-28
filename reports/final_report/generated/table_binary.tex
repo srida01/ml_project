@@ -1,0 +1,18 @@
+\begin{table}[!htbp]
+\centering
+\caption{Binary detection on the Experiment 1 test set (attack = positive class)}
+\label{tab:binary}
+\small
+\resizebox{\linewidth}{!}{\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+\textbf{Model} & \textbf{Prec.\,\%} & \textbf{Rec.\,\%} & \textbf{F1\,\%} & \textbf{FPR\,\%} & \textbf{Alerts/1k} & \textbf{ROC-AUC} & \textbf{ms/flow} \\
+\midrule
+Logistic regression & 71.16 & 95.39 & 81.51 & 9.487 & 94.9 & 0.9782 & 0.0001 \\
+Random forest & 99.56 & 99.69 & 99.62 & 0.109 & 1.1 & 0.9999 & 0.0007 \\
+XGBoost & 99.65 & 99.83 & 99.74 & 0.085 & 0.9 & 0.9999 & 0.0002 \\
+SVM gate (validation-tuned) & 87.98 & 98.03 & 92.73 & 3.285 & 32.9 & 0.9946 & 0.0066 \\
+Full fused system & 84.82 & 98.27 & 91.05 & 4.314 & 43.1 & -- & 0.0749 \\
+\bottomrule
+\end{tabular}}
+\par\smallskip\parbox{\linewidth}{\footnotesize Baselines use a 0.5 probability threshold; the SVM gate uses its validation-tuned threshold. ms/flow for baselines and the gate is model scoring only; for the fused system it is the complete engine including validation and fusion.}
+\end{table}

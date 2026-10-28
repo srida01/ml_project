@@ -1,0 +1,20 @@
+\begin{table}[!htbp]
+\centering
+\caption{SVM gate hyperparameter search on the validation split (first row: original setting; bold: selected)}
+\label{tab:svmtuning}
+\small
+\begin{tabular}{@{}rrrrrrrr@{}}
+\toprule
+\textbf{$D$} & \textbf{$\alpha$} & \textbf{Epochs} & \textbf{$\gamma$} & \textbf{Rows} & \textbf{Val.\ FPR (\%)} & \textbf{Val.\ AUC} & \textbf{Fit (s)} \\
+\midrule
+512 & $10^{-4}$ & 1 & scale & 100k & 10.79 & 0.9873 & 0.3 \\
+\textbf{2048} & $10^{-6}$ & \textbf{5} & \textbf{0.2} & \textbf{500k} & \textbf{3.29} & \textbf{0.9945} & \textbf{19.9} \\
+2048 & $10^{-6}$ & 5 & 0.05 & 500k & 3.41 & 0.9948 & 28.3 \\
+2048 & $10^{-5}$ & 5 & 0.2 & 500k & 3.72 & 0.9932 & 20.2 \\
+512 & $10^{-6}$ & 5 & scale & 500k & 3.95 & 0.9920 & 5.1 \\
+2048 & $10^{-5}$ & 5 & 0.05 & 500k & 3.98 & 0.9915 & 20.0 \\
+512 & $10^{-6}$ & 5 & 0.05 & 500k & 4.08 & 0.9930 & 5.0 \\
+\bottomrule
+\end{tabular}
+\par\smallskip\parbox{\linewidth}{\footnotesize FPR measured at the threshold giving 98\% validation recall. 36 configurations were evaluated in two rounds; the six best of round 2 are shown.}
+\end{table}

@@ -31,3 +31,6 @@ reports/tables/*
 # Local uploads/results
 uploads/
 predictions/
+
+# LaTeX build output (the submitted copy is reports/ML_IDS_Project_Report.pdf)
+reports/final_report/main.pdf

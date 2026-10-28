@@ -1,0 +1,59 @@
+\begin{table}[!htbp]
+\centering
+\caption{Fraction of test flows flagged per family (\%); benign row = false-positive rate}
+\label{tab:detfamily}
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+\textbf{Family} & \textbf{E1 gate} & \textbf{E1 AE} & \textbf{E2 gate} & \textbf{E2 AE} \\
+\midrule
+BENIGN & 3.3 & 1.1 & 97.0 & 17.1 \\
+Bot & 59.1 & 3.0 & -- & -- \\
+DDoS & 98.1 & 53.1 & 99.9 & 51.3 \\
+DoS & 98.1 & 62.2 & -- & -- \\
+Heartbleed & 33.3 & 100.0 & -- & -- \\
+Infiltration & 16.7 & 83.3 & -- & -- \\
+Patator & 94.1 & 0.0 & -- & -- \\
+PortScan & 99.9 & 0.2 & -- & -- \\
+WebAttack & 10.1 & 4.9 & -- & -- \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[!htbp]
+\centering
+\caption{Effect of validation-based SVM tuning on the Experiment 1 test set}
+\label{tab:tuningeffect}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\textbf{Metric} & \textbf{Before tuning} & \textbf{After tuning} \\
+\midrule
+SVM gate recall (\%) & 97.93 & 98.03 \\
+SVM gate FPR (\%) & 10.78 & 3.29 \\
+Fused recall (\%) & 98.17 & 98.27 \\
+Fused alerts per 1000 benign & 115.9 & 43.1 \\
+\bottomrule
+\end{tabular}
+\end{table}
+\begin{table}[!htbp]
+\centering
+\caption{Ten most important features (Random Forest base model)}
+\label{tab:features}
+\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+\textbf{Feature} & \textbf{Importance} \\
+\midrule
+Destination Port & 0.0834 \\
+Init\_Win\_bytes\_backward & 0.0593 \\
+Fwd Header Length.1 & 0.0445 \\
+Fwd Packet Length Max & 0.0409 \\
+Fwd Header Length & 0.0375 \\
+min\_seg\_size\_forward & 0.0310 \\
+Subflow Fwd Bytes & 0.0298 \\
+Total Length of Bwd Packets & 0.0294 \\
+Average Packet Size & 0.0288 \\
+Bwd Header Length & 0.0288 \\
+\bottomrule
+\end{tabular}
+\end{table}
