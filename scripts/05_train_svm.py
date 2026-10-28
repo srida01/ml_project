@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import joblib
 
@@ -42,6 +43,7 @@ def main() -> None:
         validation["binary_label"],
         target_recall=float(config.get("validation_recall_target", 0.98)),
     )
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, args.output)
     print(f"Wrote SVM gate with threshold {model.threshold:.6g}")
 

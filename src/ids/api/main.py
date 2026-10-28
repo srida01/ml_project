@@ -20,6 +20,10 @@ try:
     from fastapi import HTTPException as _HTTPException
     from fastapi import UploadFile as _UploadFile
 
+    # Request models must be module globals: with postponed annotations,
+    # FastAPI resolves endpoint parameter types from this module's namespace.
+    from ids.api.schemas import BatchRequest, FlowRequest
+
     FastAPI = _FastAPI
     File = _File
     HTTPException = _HTTPException
@@ -27,7 +31,7 @@ try:
 except ImportError:  # pragma: no cover - optional during lightweight imports
     pass
 
-from ids.api.service import InferenceService
+from ids.api.service import InferenceService, to_json_records
 from ids.pipeline.load import PROJECT_ROOT, load_fusion_policy, load_inference_engine
 from ids.pipeline.predict import InferenceEngine
 from ids.utils.io import read_yaml
@@ -47,8 +51,6 @@ def _load_engine() -> InferenceEngine:
 def create_app(service: InferenceService | None = None):
     if FastAPI is None or File is None or HTTPException is None or UploadFile is None:  # pragma: no cover
         raise RuntimeError("FastAPI is required to create the HTTP application")
-    from ids.api.schemas import BatchRequest, FlowRequest
-
     api_config = read_yaml(PROJECT_ROOT / "configs" / "api.yaml")
     load_error = None
     if service is None:
@@ -108,8 +110,7 @@ def create_app(service: InferenceService | None = None):
             if len(frame) > service.max_batch_rows:
                 raise HTTPException(status_code=413, detail=f"Uploaded file exceeds maximum of {service.max_batch_rows} rows")
             predictions_frame = service.engine.predict_frame(frame)
-            predictions = predictions_frame.where(pd.notna(predictions_frame), None).to_dict(orient="records")
-            return {"predictions": predictions, "model_version": service.engine.model_version}
+            return {"predictions": to_json_records(predictions_frame), "model_version": service.engine.model_version}
         except (ValueError, RuntimeError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 

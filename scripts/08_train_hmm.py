@@ -6,6 +6,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
+import joblib
+
 import _bootstrap  # noqa: F401
 
 from ids.models.temporal_hmm import TemporalHMM, build_sequences

@@ -49,3 +49,13 @@ def test_high_recall_threshold_matches_highest_valid_candidate():
     threshold = model.select_high_recall_threshold(scores[:, None], labels, target_recall=2 / 3)
 
     assert threshold == 0.2
+
+
+def test_high_recall_threshold_rejects_validation_without_attacks():
+    class FixedScores:
+        def decision_function(self, X):
+            return np.asarray(X[:, 0], dtype=float)
+
+    scores = np.array([-0.4, 0.1, 0.2])
+    with pytest.raises(ValueError, match="no attack rows"):
+        SVMFilter(FixedScores()).select_high_recall_threshold(scores[:, None], np.zeros(3, dtype=int))

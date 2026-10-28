@@ -61,6 +61,7 @@ def split_frame(
     validation_fraction: float = 0.15,
     seed: int = 42,
     withheld_label_values: Iterable[str] = (),
+    max_group_shuffles: int = 100,
 ) -> SplitResult:
     if abs(train_fraction + validation_fraction - 0.85) > 1e-9:
         raise ValueError("This splitter expects train + validation = 0.85, leaving 0.15 for test")
@@ -80,6 +81,7 @@ def split_frame(
     validation_mask = pd.Series(False, index=frame.index)
     test_mask = pd.Series(False, index=frame.index)
     used_group_split = bool(group_columns and frame[group_columns].notna().any(axis=None))
+    group_shuffle_attempts = 0
     if used_group_split:
         groups = frame[group_columns].astype("string").fillna("<missing>").agg("|".join, axis=1)
         unique_groups = groups.drop_duplicates().tolist()
@@ -88,19 +90,32 @@ def split_frame(
         import numpy as np
 
         rng = np.random.default_rng(seed)
-        rng.shuffle(eligible_groups)
         n_train, n_validation, _ = _group_counts(len(eligible_groups), train_fraction, validation_fraction)
         if n_train == 0:
             used_group_split = False
         else:
-            train_groups = set(eligible_groups[:n_train])
-            validation_groups = set(eligible_groups[n_train:n_train + n_validation])
-            test_groups = set(eligible_groups[n_train + n_validation:]) | withheld_groups
-            train_mask = groups.isin(train_groups)
-            validation_mask = groups.isin(validation_groups)
-            test_mask = groups.isin(test_groups)
-        if validation_mask.sum() == 0 or test_mask.sum() == 0:
+            # Whole capture files are often single-class (e.g. a benign-only
+            # Monday). A partition without every target class cannot calibrate
+            # thresholds or measure recall, so reshuffle deterministically
+            # until each partition covers every class.
+            labels = frame[label_column]
+            required_classes = set(labels[~withheld_mask].dropna().unique().tolist())
             used_group_split = False
+            for group_shuffle_attempts in range(1, max_group_shuffles + 1):
+                order = list(eligible_groups)
+                rng.shuffle(order)
+                train_groups = set(order[:n_train])
+                validation_groups = set(order[n_train:n_train + n_validation])
+                test_groups = set(order[n_train + n_validation:]) | withheld_groups
+                train_mask = groups.isin(train_groups)
+                validation_mask = groups.isin(validation_groups)
+                test_mask = groups.isin(test_groups)
+                if all(
+                    required_classes <= set(labels[mask & ~withheld_mask].dropna().unique().tolist())
+                    for mask in (train_mask, validation_mask, test_mask)
+                ):
+                    used_group_split = True
+                    break
     if not used_group_split:
         eligible = frame.loc[~withheld_mask]
         train_indices, validation_indices, test_indices = _stratified_indices(eligible[label_column], train_fraction, validation_fraction, seed)
@@ -118,6 +133,7 @@ def split_frame(
             "group_columns": group_columns,
             "seed": seed,
             "withheld_families": sorted(withheld_label_values),
+            "group_shuffle_attempts": group_shuffle_attempts,
             "rows": {
                 "train": int(train_mask.sum()),
                 "validation": int(validation_mask.sum()),

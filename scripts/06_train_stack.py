@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import joblib
 
@@ -34,6 +35,7 @@ def main() -> None:
         xgboost_estimators=int(config.get("xgboost_estimators", 200)),
         max_rows=int(config["max_rows"]) if config.get("max_rows") is not None else None,
     )
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     joblib.dump(model, args.output)
     print("Wrote OOF stacking classifier")
 

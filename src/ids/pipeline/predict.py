@@ -26,6 +26,7 @@ INFERENCE_METADATA_COLUMNS = {
     "Src Port",
     "Dst Port",
     "Protocol",
+    "duplicate_row",
 }
 INFERENCE_TARGET_COLUMNS = {
     "Label",
@@ -149,10 +150,12 @@ class InferenceEngine:
         unexpected = [column for column in frame.columns if column not in allowed]
         if unexpected:
             raise ValueError(f"Unexpected input columns: {unexpected}")
+        # Missing values are imputed by the train-fitted preprocessor, exactly
+        # as during training. Infinity and non-numeric text are rejected.
         invalid = []
         for column in self.required_features:
-            values = pd.to_numeric(frame[column], errors="coerce").to_numpy(dtype=float)
-            if not np.isfinite(values).all():
+            coerced = pd.to_numeric(frame[column], errors="coerce")
+            if np.isinf(coerced.to_numpy(dtype=float)).any() or (frame[column].notna() & coerced.isna()).any():
                 invalid.append(column)
         if invalid:
             raise ValueError(f"Non-finite or non-numeric values in required features: {invalid}")

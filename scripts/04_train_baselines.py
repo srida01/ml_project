@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import _bootstrap  # noqa: F401
 
@@ -21,6 +22,7 @@ def main() -> None:
     parser.add_argument("--train", default="data/processed/train.parquet")
     parser.add_argument("--output-dir", default="artifacts/models")
     args = parser.parse_args()
+    Path(args.output_dir).mkdir(parents=True, exist_ok=True)
     frame = read_table(args.train)
     preprocessor = FeaturePreprocessor.fit(frame)
     X, y = preprocessor.transform(frame), frame["binary_label"]

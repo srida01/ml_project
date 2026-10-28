@@ -109,8 +109,8 @@ class SVMFilter:
         # the ceil(target_recall * positive_count)-th highest positive sample.
         positive_scores = np.sort(scores[np.asarray(y_validation) == 1])[::-1]
         if len(positive_scores) == 0:
-            self.threshold = best
-            return best
+            # Falling back to the minimum score would flag every flow.
+            raise ValueError("Validation data contains no attack rows; the SVM recall threshold cannot be calibrated")
         required = int(np.ceil(target_recall * len(positive_scores)))
         if required <= 0:
             best = float(candidates[-1])

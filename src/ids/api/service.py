@@ -37,4 +37,13 @@ class InferenceService:
             raise ValueError(f"Batch exceeds maximum of {self.max_batch_rows} rows")
         frame = pd.DataFrame(flows)
         predictions = self.engine.predict_frame(frame)
-        return predictions.where(pd.notna(predictions), None).to_dict(orient="records")
+        return to_json_records(predictions)
+
+
+def to_json_records(frame: pd.DataFrame) -> list[dict[str, Any]]:
+    """Convert predictions to JSON-safe records with missing values as ``None``.
+
+    ``where(..., None)`` alone keeps NaN in float columns, which JSON cannot
+    encode, so cast to object first.
+    """
+    return frame.astype(object).where(pd.notna(frame), None).to_dict(orient="records")

@@ -36,3 +36,20 @@ def test_withheld_family_is_test_only():
     assert "Novel" not in set(result.train["multiclass_label"])
     assert "Novel" not in set(result.validation["multiclass_label"])
     assert set(result.test["multiclass_label"]) >= {"Novel"}
+
+
+def test_group_split_keeps_every_class_in_every_partition():
+    # Mirrors CICIDS2017 day files: Monday is benign-only. With seed 42 the
+    # first shuffle puts it in validation, leaving no attacks to calibrate on.
+    days = ["friday", "monday", "thursday", "tuesday", "wednesday"]
+    frame = pd.DataFrame(
+        {
+            "binary_label": [0 if day == "monday" else label for day in days for label in (0, 1)],
+            "source_file": [f"{day}.csv" for day in days for _ in range(2)],
+        }
+    )
+    result = split_frame(frame, group_columns=["source_file"], seed=42)
+    assert result.manifest["strategy"] == "group"
+    assert result.manifest["group_shuffle_attempts"] > 1
+    for part in (result.train, result.validation, result.test):
+        assert set(part["binary_label"]) == {0, 1}

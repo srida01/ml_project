@@ -89,3 +89,11 @@ def test_inference_rejects_targets_and_nonfinite_features():
         engine.predict_frame(pd.DataFrame({"x": [1.0], "Label": ["BENIGN"]}))
     with pytest.raises(ValueError, match="Non-finite"):
         engine.predict_frame(pd.DataFrame({"x": [np.inf]}))
+
+
+def test_inference_imputes_missing_values_and_accepts_cleaning_metadata():
+    engine = InferenceEngine(preprocessor=FakePreprocessor(), svm_filter=FakeSVM())
+    result = engine.predict_frame(pd.DataFrame({"x": [np.nan, 0.9], "duplicate_row": [0, 1]}))
+    assert len(result) == 2
+    with pytest.raises(ValueError, match="non-numeric"):
+        engine.predict_frame(pd.DataFrame({"x": ["not-a-number"]}))

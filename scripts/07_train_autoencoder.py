@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from pathlib import Path
 
 import joblib
 import numpy as np
@@ -43,6 +44,7 @@ def main() -> None:
         seed=int(config.get("seed", 42)),
         fpr=float(config.get("benign_validation_fpr", 0.01)),
     )
+    Path(args.output).parent.mkdir(parents=True, exist_ok=True)
     scorer.save(args.output)
     joblib.dump(scorer, args.output + ".joblib")
     print(f"Wrote benign-only autoencoder with threshold {scorer.threshold:.6g}")
