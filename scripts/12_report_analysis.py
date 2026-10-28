@@ -380,7 +380,7 @@ def _detection_figure(plt, rates: dict, path: Path) -> None:
     ax.set_ylabel("Flows flagged")
     ax.set_ylim(0, 1.05)
     ax.grid(axis="x", visible=False)
-    ax.legend(fontsize=7.5, ncol=2, loc="lower right")
+    ax.legend(fontsize=7.5, ncol=2, loc="lower center", bbox_to_anchor=(0.5, 1.0))
     fig.savefig(path)
     plt.close(fig)
 
