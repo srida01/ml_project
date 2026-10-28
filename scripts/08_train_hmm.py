@@ -6,8 +6,6 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-import joblib
-
 import _bootstrap  # noqa: F401
 
 from ids.models.temporal_hmm import TemporalHMM, build_sequences
@@ -34,21 +32,19 @@ def main() -> None:
 
     preprocessor = FeaturePreprocessor.load(args.preprocessor)
     X = preprocessor.transform(frame)
-    svm_filter = joblib.load(args.svm)
-    frame["svm_score"] = svm_filter.score(X)
-    if args.stack and Path(args.stack).is_file():
-        stack = joblib.load(args.stack)
-        _, frame["known_attack_confidence"] = stack.predict_with_confidence(X)
-    else:
-        frame["known_attack_confidence"] = 0.0
-    if args.autoencoder and Path(args.autoencoder).is_file():
-        autoencoder = joblib.load(args.autoencoder)
-        frame["anomaly_score"] = autoencoder.score(X)
-    else:
-        frame["anomaly_score"] = 0.0
-
-    configured_columns = config.get("emission_columns", ["svm_score", "known_attack_confidence", "anomaly_score"])
-    columns = [column for column in configured_columns if column in frame]
+    configured_columns = config.get("emission_columns", ["Flow Duration", "Flow Packets/s", "Packet Length Mean"])
+    # Use inference-available raw features only.  In-sample supervised model
+    # outputs would leak training-row information into HMM parameters.
+    feature_positions = {column: position for position, column in enumerate(preprocessor.columns)}
+    columns = []
+    for column in configured_columns:
+        if column in feature_positions:
+            frame[column] = X[:, feature_positions[column]]
+            columns.append(column)
+    if not columns:
+        Path(args.output).unlink(missing_ok=True)
+        print("No configured inference-available HMM emissions: HMM is unavailable")
+        return
     sequences = build_sequences(
         frame,
         min_length=int(config.get("min_sequence_length", 2)),

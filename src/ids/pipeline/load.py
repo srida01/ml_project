@@ -62,6 +62,13 @@ def load_inference_engine(
     stack = joblib.load(stack_path) if stack_path.exists() else None
     autoencoder = joblib.load(autoencoder_path) if autoencoder_path.exists() else None
     temporal_hmm = joblib.load(hmm_path) if hmm_path.exists() else None
+    _validate_inference_manifest(
+        artifacts_dir / "metadata" / "inference_manifest.json",
+        preprocessor=preprocessor,
+        svm_filter=svm_filter,
+        stack=stack,
+        temporal_hmm=temporal_hmm,
+    )
     return InferenceEngine(
         preprocessor=preprocessor,
         svm_filter=svm_filter,
@@ -71,3 +78,28 @@ def load_inference_engine(
         policy=policy,
         model_version=load_model_version(artifacts_dir, ready=True),
     )
+
+
+def _validate_inference_manifest(path: Path, *, preprocessor: Any, svm_filter: Any, stack: Any, temporal_hmm: Any) -> None:
+    if not path.exists():
+        raise RuntimeError(f"Inference manifest is missing: {path}")
+    try:
+        manifest = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Inference manifest cannot be read: {path}") from exc
+    if not manifest.get("model_version"):
+        raise RuntimeError("Inference manifest has no model_version")
+    feature_columns = manifest.get("feature_columns")
+    if feature_columns != list(preprocessor.columns):
+        raise RuntimeError("Inference manifest feature schema does not match the preprocessor")
+    labels = manifest.get("labels", [])
+    if stack is not None and labels != [str(label) for label in stack.classes_]:
+        raise RuntimeError("Inference manifest labels do not match the stack classifier")
+    thresholds = manifest.get("thresholds", {})
+    if "svm" in thresholds and abs(float(thresholds["svm"]) - float(svm_filter.threshold)) > 1e-9:
+        raise RuntimeError("Inference manifest SVM threshold does not match the saved model")
+    hmm_trained = thresholds.get("hmm_trained")
+    if hmm_trained is True and temporal_hmm is None:
+        raise RuntimeError("Manifest declares an HMM but no HMM artifact is available")
+    if hmm_trained is False and temporal_hmm is not None:
+        raise RuntimeError("An HMM artifact exists although the manifest marks HMM as unavailable")

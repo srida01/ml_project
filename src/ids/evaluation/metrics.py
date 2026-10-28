@@ -56,6 +56,14 @@ def classification_metrics(y_true: Iterable, y_pred: Iterable, scores: Iterable 
             for index, label in enumerate(labels)
         },
     }
+    if len(labels) == 2:
+        selected_positive = positive_label if positive_label in labels else labels[-1]
+        negative_labels = [label for label in labels if label != selected_positive]
+        negative = negative_labels[0] if negative_labels else None
+        counts = binary_counts(y_true, y_pred, positive_label=selected_positive)
+        result["specificity"] = float(counts["tn"] / (counts["tn"] + counts["fp"])) if negative is not None and counts["tn"] + counts["fp"] else 0.0
+        result["fpr"] = float(counts["fp"] / (counts["tn"] + counts["fp"])) if negative is not None and counts["tn"] + counts["fp"] else 0.0
+        result["alert_volume_per_1000_benign"] = float(1000.0 * counts["fp"] / (counts["tn"] + counts["fp"])) if negative is not None and counts["tn"] + counts["fp"] else 0.0
     if scores is not None and len(labels) == 2:
         try:
             result["roc_auc"] = float(roc_auc_score(y_true, list(scores)))

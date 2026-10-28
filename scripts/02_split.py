@@ -19,7 +19,14 @@ def main() -> None:
     parser.add_argument("--config", default="configs/split.yaml")
     args = parser.parse_args()
     config = read_yaml(args.config)
-    result = split_frame(read_table(args.input), label_column="binary_label", group_columns=config.get("group_columns", []), train_fraction=float(config.get("train_fraction", 0.70)), validation_fraction=float(config.get("validation_fraction", 0.15)), seed=int(config.get("seed", 42)))
+    frame = read_table(args.input)
+    group_columns = list(config.get("group_columns", []))
+    # A sequence must never be divided across partitions.  Include the
+    # sequence identity when it is available, while retaining capture/source
+    # context so IDs reused on different days remain distinct.
+    if "sequence_id" in frame.columns and "sequence_id" not in group_columns:
+        group_columns.append("sequence_id")
+    result = split_frame(frame, label_column="binary_label", group_columns=group_columns, train_fraction=float(config.get("train_fraction", 0.70)), validation_fraction=float(config.get("validation_fraction", 0.15)), seed=int(config.get("seed", 42)), withheld_label_values=config.get("open_set_withheld_families", []))
     output_dir = Path(args.output_dir)
     write_table(result.train, output_dir / "train.parquet")
     write_table(result.validation, output_dir / "validation.parquet")

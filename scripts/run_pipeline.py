@@ -14,6 +14,7 @@ import json
 import os
 import subprocess
 import sys
+import time
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -36,12 +37,13 @@ def run_stage(name: str, *arguments: str, allow_failure: bool = False) -> bool:
 
 
 def evaluate_test_set() -> None:
-    """Evaluate the SVM gate on the frozen test set after training."""
+    """Evaluate the frozen test set without changing any model parameters."""
     import joblib
 
     sys.path.insert(0, str(ROOT / "src"))
     from ids.evaluation.metrics import classification_metrics
     from ids.features.preprocess import FeaturePreprocessor
+    from ids.pipeline.load import load_inference_engine
     from ids.utils.io import read_table, write_json
 
     test = read_table(ROOT / "data/processed/test.parquet")
@@ -53,6 +55,44 @@ def evaluate_test_set() -> None:
     output = ROOT / "reports/tables/test_binary_metrics.json"
     write_json(metrics, output)
     print(f"Wrote frozen test metrics to {output}")
+
+    # Evaluate the complete saved inference contract as well.  Targets are
+    # removed before prediction so the production path cannot accidentally
+    # consume labels or evaluation-only columns.
+    engine = load_inference_engine(artifacts_dir=ROOT / "artifacts", project_root=ROOT)
+    inference_frame = test.drop(
+        columns=["Label", "raw_label", "binary_label", "multiclass_label", "predicted_binary_label"],
+        errors="ignore",
+    )
+    inference_start = time.perf_counter()
+    predicted = engine.predict_frame(inference_frame)
+    inference_seconds = time.perf_counter() - inference_start
+    system_metrics = {
+        "svm_gate": metrics,
+        "fusion": classification_metrics(
+            test["binary_label"],
+            (predicted["final_alert_label"] != "benign").astype("int8"),
+            predicted["svm_score"],
+        ),
+        "rows": len(test),
+        "temporal_rows": int(predicted["hmm_current_state"].notna().sum()),
+        "inference_seconds": inference_seconds,
+        "inference_ms_per_flow": 1000.0 * inference_seconds / max(len(test), 1),
+        "inference_flows_per_second": len(test) / max(inference_seconds, 1e-12),
+    }
+    attack_mask = test["binary_label"].to_numpy() == 1
+    if attack_mask.any() and predicted.loc[attack_mask, "known_attack_label"].notna().any():
+        oracle_true = test.loc[attack_mask, "multiclass_label"]
+        oracle_pred = predicted.loc[attack_mask, "known_attack_label"].fillna("SVM_GATE_MISS")
+        system_metrics["known_attack_cascade"] = classification_metrics(oracle_true, oracle_pred)
+    if predicted["anomaly_score"].notna().any():
+        system_metrics["autoencoder"] = {
+            "benign_fpr": float(predicted.loc[test["binary_label"] == 0, "anomaly_flag"].mean()),
+            "attack_tpr": float(predicted.loc[test["binary_label"] == 1, "anomaly_flag"].mean()),
+        }
+    system_output = ROOT / "reports/tables/test_system_metrics.json"
+    write_json(system_metrics, system_output)
+    print(f"Wrote frozen system metrics to {system_output}")
 
 
 def write_inference_manifest(hmm_trained: bool) -> str:
@@ -116,6 +156,9 @@ def main() -> None:
 
     if not args.skip_autoencoder:
         run_stage("07_train_autoencoder.py")
+    else:
+        (ROOT / "artifacts/models/autoencoder.pt").unlink(missing_ok=True)
+        (ROOT / "artifacts/models/autoencoder.pt.joblib").unlink(missing_ok=True)
 
     hmm_trained = False
     if not args.skip_hmm:
@@ -134,6 +177,8 @@ def main() -> None:
             "" if args.skip_autoencoder else "artifacts/models/autoencoder.pt.joblib",
         )
         hmm_trained = (ROOT / "artifacts/models/temporal_hmm.joblib").exists()
+    else:
+        (ROOT / "artifacts/models/temporal_hmm.joblib").unlink(missing_ok=True)
 
     run_stage("09_select_fusion.py")
     model_version = write_inference_manifest(hmm_trained)

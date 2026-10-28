@@ -62,13 +62,20 @@ class TemporalHMM:
     def current_state(self, observations: np.ndarray) -> int:
         observations = np.asarray(observations, dtype=float)
         if self.model is not None:
-            return int(self.model.predict(observations[-1:].reshape(1, -1))[0])
+            # ``predict`` on only the last row discards the temporal history.
+            # Filtering the observations seen so far keeps this causal while
+            # allowing earlier emissions to influence the current state.
+            posterior = np.asarray(self.model.predict_proba(observations), dtype=float)
+            return int(np.argmax(posterior[-1]))
         return int(np.argmax(observations[-1])) % self.state_count
 
     def next_state_distribution(self, observations: np.ndarray) -> np.ndarray:
         state = self.current_state(observations)
         if self.model is not None:
-            return np.asarray(self.model.transmat_[state], dtype=float)
+            posterior = np.asarray(self.model.predict_proba(observations), dtype=float)[-1]
+            distribution = posterior @ np.asarray(self.model.transmat_, dtype=float)
+            total = distribution.sum()
+            return distribution / total if total else np.full(self.state_count, 1.0 / self.state_count)
         if self.fallback_transition is None:
             raise RuntimeError("Temporal model has no transition matrix")
         return np.asarray(self.fallback_transition[state], dtype=float)

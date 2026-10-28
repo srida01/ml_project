@@ -28,7 +28,7 @@ except ImportError:  # pragma: no cover - optional during lightweight imports
     pass
 
 from ids.api.service import InferenceService
-from ids.pipeline.load import PROJECT_ROOT, load_inference_engine
+from ids.pipeline.load import PROJECT_ROOT, load_fusion_policy, load_inference_engine
 from ids.pipeline.predict import InferenceEngine
 from ids.utils.io import read_yaml
 
@@ -50,10 +50,16 @@ def create_app(service: InferenceService | None = None):
     from ids.api.schemas import BatchRequest, FlowRequest
 
     api_config = read_yaml(PROJECT_ROOT / "configs" / "api.yaml")
-    service = service or InferenceService(
-        _load_engine(),
-        max_batch_rows=int(api_config.get("max_batch_rows", 10000)),
-    )
+    load_error = None
+    if service is None:
+        try:
+            engine = _load_engine()
+        except (ImportError, OSError, RuntimeError) as exc:
+            # Keep liveness available while accurately reporting that the
+            # server cannot serve predictions until a valid bundle exists.
+            engine = InferenceEngine(policy=load_fusion_policy(PROJECT_ROOT), model_version="untrained-development")
+            load_error = str(exc)
+        service = InferenceService(engine, max_batch_rows=int(api_config.get("max_batch_rows", 10000)))
     max_upload_bytes = int(api_config.get("max_upload_bytes", 10 * 1024 * 1024))
 
     @asynccontextmanager
@@ -65,7 +71,10 @@ def create_app(service: InferenceService | None = None):
     @app.get("/health")
     def health():
         ready = bool(service.engine.preprocessor and service.engine.svm_filter)
-        return {"status": "ready" if ready else "not_ready", "model_version": service.engine.model_version}
+        response = {"status": "ready" if ready and load_error is None else "not_ready", "model_version": service.engine.model_version}
+        if load_error is not None:
+            response["error"] = load_error
+        return response
 
     @app.get("/model-info")
     def model_info():
@@ -94,12 +103,14 @@ def create_app(service: InferenceService | None = None):
             raise HTTPException(status_code=413, detail=f"Uploaded file exceeds the {max_upload_bytes}-byte limit")
         try:
             frame = pd.read_csv(io.BytesIO(content))
+            if frame.empty:
+                raise HTTPException(status_code=422, detail="Uploaded CSV contains no data rows")
             if len(frame) > service.max_batch_rows:
                 raise HTTPException(status_code=413, detail=f"Uploaded file exceeds maximum of {service.max_batch_rows} rows")
             predictions_frame = service.engine.predict_frame(frame)
             predictions = predictions_frame.where(pd.notna(predictions_frame), None).to_dict(orient="records")
             return {"predictions": predictions, "model_version": service.engine.model_version}
-        except (ValueError, RuntimeError, pd.errors.ParserError) as exc:
+        except (ValueError, RuntimeError, pd.errors.ParserError, pd.errors.EmptyDataError) as exc:
             raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     return app

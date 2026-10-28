@@ -1,5 +1,6 @@
 import numpy as np
 import pandas as pd
+import pytest
 
 from ids.pipeline.predict import InferenceEngine, prediction_columns
 
@@ -26,6 +27,15 @@ class FakeAutoencoder:
 
     def score(self, X):
         return X[:, 0]
+
+
+class FakeStack:
+    def __init__(self):
+        self.seen_rows = 0
+
+    def predict_with_confidence(self, X):
+        self.seen_rows = len(X)
+        return np.array(["DoS"] * len(X)), np.array([0.9] * len(X))
 
 
 def test_prediction_contract_preserves_stage_outputs():
@@ -61,3 +71,21 @@ def test_prediction_applies_temporal_context():
     result = engine.predict_frame(pd.DataFrame({"x": [0.1, 0.9], "sequence_id": ["a", "a"]}))
     assert result["hmm_current_state"].tolist() == [0, 1]
     assert result["hmm_next_state"].tolist() == [1, 1]
+
+
+def test_stack_is_only_called_for_svm_gated_rows_and_flow_id_is_preserved():
+    stack = FakeStack()
+    engine = InferenceEngine(preprocessor=FakePreprocessor(), svm_filter=FakeSVM(), stack_classifier=stack)
+    result = engine.predict_frame(pd.DataFrame({"Flow ID": ["first", "second"], "x": [0.1, 0.9]}))
+    assert stack.seen_rows == 1
+    assert result["flow_id"].tolist() == ["first", "second"]
+    assert pd.isna(result.loc[0, "known_attack_label"])
+    assert result.loc[1, "known_attack_label"] == "DoS"
+
+
+def test_inference_rejects_targets_and_nonfinite_features():
+    engine = InferenceEngine(preprocessor=FakePreprocessor(), svm_filter=FakeSVM())
+    with pytest.raises(ValueError, match="Target/evaluation"):
+        engine.predict_frame(pd.DataFrame({"x": [1.0], "Label": ["BENIGN"]}))
+    with pytest.raises(ValueError, match="Non-finite"):
+        engine.predict_frame(pd.DataFrame({"x": [np.inf]}))

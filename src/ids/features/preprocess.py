@@ -37,8 +37,16 @@ class FeaturePreprocessor:
         values = frame.reindex(columns=self.columns).apply(pd.to_numeric, errors="coerce")
         return self.scaler.transform(self.imputer.transform(values))
 
-    def fit_transform(self, frame: pd.DataFrame):
-        return self.transform(frame)
+    @classmethod
+    def fit_transform(cls, frame: pd.DataFrame, columns: Iterable[str] | None = None):
+        """Fit a new preprocessor on ``frame`` and return its transformed data.
+
+        ``fit`` remains the API for retaining the fitted object.  This helper
+        mirrors the usual transformer contract and, unlike the old instance
+        method, cannot accidentally transform with an unfitted object.
+        """
+        fitted = cls.fit(frame, columns)
+        return fitted.transform(frame)
 
     def to_metadata(self) -> dict:
         return {"columns": self.columns, "feature_count": len(self.columns)}

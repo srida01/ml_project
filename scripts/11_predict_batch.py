@@ -9,7 +9,7 @@ from pathlib import Path
 import _bootstrap  # noqa: F401
 
 from ids.features.preprocess import FeaturePreprocessor
-from ids.pipeline.load import load_fusion_policy, load_model_version
+from ids.pipeline.load import _validate_inference_manifest, load_fusion_policy, load_model_version
 from ids.pipeline.predict import InferenceEngine
 from ids.utils.io import read_table, write_table
 
@@ -30,7 +30,7 @@ def load_engine(
     autoencoder = joblib.load(autoencoder_path) if autoencoder_path and Path(autoencoder_path).is_file() else None
     temporal_hmm = joblib.load(hmm_path) if hmm_path and Path(hmm_path).is_file() else None
     artifacts_path = Path(artifacts_dir)
-    return InferenceEngine(
+    engine = InferenceEngine(
         preprocessor=preprocessor,
         svm_filter=svm_filter,
         stack_classifier=stack,
@@ -39,6 +39,14 @@ def load_engine(
         policy=load_fusion_policy(Path(__file__).resolve().parents[1], artifacts_path),
         model_version=load_model_version(artifacts_path, ready=True),
     )
+    _validate_inference_manifest(
+        artifacts_path / "metadata" / "inference_manifest.json",
+        preprocessor=preprocessor,
+        svm_filter=svm_filter,
+        stack=stack,
+        temporal_hmm=temporal_hmm,
+    )
+    return engine
 
 
 def main() -> None:
